@@ -15,6 +15,7 @@ class Task():
             target_pos: target/goal (x,y,z) position for the agent
         """
         # Simulation
+        # state includes position and angle (6 dimentions)
         self.sim = PhysicsSim(init_pose, init_velocities, init_angle_velocities, runtime) 
         self.action_repeat = 3
 
@@ -28,7 +29,7 @@ class Task():
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
-        reward = 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+        reward = 1. - .3*(abs(self.sim.pose[:3] - self.target_pos)).sum() - .3*(abs(self.sim.linear_accel.sum())) - .3*(abs(self.sim.angular_accels.sum()))
         return reward
 
     def step(self, rotor_speeds):
