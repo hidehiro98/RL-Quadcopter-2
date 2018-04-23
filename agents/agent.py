@@ -236,7 +236,7 @@ class DDPG():
 
         # Soft-update target models
         self.soft_update(self.critic_local.model, self.critic_target.model)
-        self.soft_update(self.actor_local.model, self.actor_target.model)   
+        self.soft_update(self.actor_local.model, self.actor_target.model)
 
     def soft_update(self, local_model, target_model):
         """Soft update model parameters."""
