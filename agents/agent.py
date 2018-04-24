@@ -31,6 +31,7 @@ class ReplayBuffer:
 
 from keras import layers, models, optimizers
 from keras import backend as K
+from keras.layers.advanced_activations import LeakyReLU
 
 class Actor:
     """Actor (Policy) Model."""
@@ -61,9 +62,11 @@ class Actor:
         states = layers.Input(shape=(self.state_size,), name='states')
 
         # Add hidden layers
-        net = layers.Dense(units=32, activation='relu')(states)
-        net = layers.Dense(units=64, activation='relu')(net)
-        net = layers.Dense(units=32, activation='relu')(net)
+        net = layers.Dense(units=64, activation='linear')(states)
+        net = LeakyReLU(alpha=0.01)(net)
+        net = layers.Dense(units=64, activation='linear')(net)
+        net = LeakyReLU(alpha=0.01)(net)
+        # net = layers.Dense(units=32, activation='relu')(net)
 
         # Try different layer sizes, activations, add batch normalization, regularizers, etc.
 
@@ -118,18 +121,23 @@ class Critic:
         actions = layers.Input(shape=(self.action_size,), name='actions')
 
         # Add hidden layer(s) for state pathway
-        net_states = layers.Dense(units=32, activation='relu')(states)
-        net_states = layers.Dense(units=64, activation='relu')(net_states)
+        net_states = layers.Dense(units=32, activation='linear')(states)
+        net_states = LeakyReLU(alpha=0.01)(net_states)
+        net_states = layers.Dense(units=64, activation='linear')(net_states)
+        net_states = LeakyReLU(alpha=0.01)(net_states)
 
         # Add hidden layer(s) for action pathway
-        net_actions = layers.Dense(units=32, activation='relu')(actions)
-        net_actions = layers.Dense(units=64, activation='relu')(net_actions)
+        net_actions = layers.Dense(units=32, activation='linear')(actions)
+        net_actions = LeakyReLU(alpha=0.01)(net_actions)
+        net_actions = layers.Dense(units=64, activation='linear')(net_actions)
+        net_actions = LeakyReLU(alpha=0.01)(net_actions)
 
         # Try different layer sizes, activations, add batch normalization, regularizers, etc.
 
         # Combine state and action pathways
         net = layers.Add()([net_states, net_actions])
-        net = layers.Activation('relu')(net)
+        net = layers.Activation('linear')(net)
+        net = LeakyReLU(alpha=0.01)(net)
 
         # Add more layers to the combined network if needed
 
@@ -186,7 +194,8 @@ class DDPG():
 
         # Algorithm parameters
         self.gamma = 0.99  # discount factor
-        self.tau = 0.01  # for soft update of target parameters
+        self.policy_tau = 0.001  # for soft update of target parameters
+        self.value_tau = 0.0001
 
     def reset_episode(self):
         self.noise.reset()
@@ -235,17 +244,17 @@ class DDPG():
         self.actor_local.train_fn([states, action_gradients, 1])  # custom training function
 
         # Soft-update target models
-        self.soft_update(self.critic_local.model, self.critic_target.model)
-        self.soft_update(self.actor_local.model, self.actor_target.model)
+        self.soft_update(self.critic_local.model, self.critic_target.model, self.value_tau)
+        self.soft_update(self.actor_local.model, self.actor_target.model, self.policy_tau)
 
-    def soft_update(self, local_model, target_model):
+    def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters."""
         local_weights = np.array(local_model.get_weights())
         target_weights = np.array(target_model.get_weights())
 
         assert len(local_weights) == len(target_weights), "Local and target model parameters must have the same size"
 
-        new_weights = self.tau * local_weights + (1 - self.tau) * target_weights
+        new_weights = tau * local_weights + (1 - tau) * target_weights
         target_model.set_weights(new_weights)
         
         
