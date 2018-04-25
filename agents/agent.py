@@ -183,8 +183,13 @@ class DDPG():
 
         # Noise process
         self.exploration_mu = 0
-        self.exploration_theta = 0.15
-        self.exploration_sigma = 0.2
+        
+        # for taking off task: 0.001
+        # for hovering task: 0.00001
+        # for landing task: 
+        self.exploration_theta = 0.00001
+        self.exploration_sigma = 0.00001
+        
         self.noise = OUNoise(self.action_size, self.exploration_mu, self.exploration_theta, self.exploration_sigma)
 
         # Replay memory
@@ -194,8 +199,8 @@ class DDPG():
 
         # Algorithm parameters
         self.gamma = 0.99  # discount factor
-        self.policy_tau = 0.001  # for soft update of target parameters
-        self.value_tau = 0.0001
+        self.policy_tau = 0.0001  # for soft update of target parameters (actor)
+        self.value_tau = 0.001  # (critic)
 
     def reset_episode(self):
         self.noise.reset()
@@ -244,8 +249,8 @@ class DDPG():
         self.actor_local.train_fn([states, action_gradients, 1])  # custom training function
 
         # Soft-update target models
-        self.soft_update(self.critic_local.model, self.critic_target.model, self.value_tau)
         self.soft_update(self.actor_local.model, self.actor_target.model, self.policy_tau)
+        self.soft_update(self.critic_local.model, self.critic_target.model, self.value_tau)
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters."""

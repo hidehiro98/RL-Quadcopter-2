@@ -17,11 +17,11 @@ class Task():
         # Simulation
         # state includes position and angle (6 dimentions)
         self.sim = PhysicsSim(init_pose, init_velocities, init_angle_velocities, runtime) 
-        self.action_repeat = 3
+        self.action_repeat = 4
 
         self.state_size = self.action_repeat * 6
-        self.action_low = 10
-        self.action_high = 900
+        self.action_low = 450
+        self.action_high = 450
         self.action_size = 4
 
         # Goal
@@ -30,8 +30,11 @@ class Task():
     def get_reward(self):
         """Uses current pose of sim to return reward."""
         # reward = 1. - .3*(abs(self.sim.pose[:3] - self.target_pos)).sum() - .003*(abs(self.sim.linear_accel.sum())) - .003*(abs(self.sim.angular_accels.sum()))
-        reward = -(abs(self.sim.pose[:3] - self.target_pos)).sum()
-        reward = np.clip(reward, -1, 1)
+        reward = -0.01 * (abs(self.sim.pose[:3] - self.target_pos)).sum()
+        # reward = np.clip(reward, -1, 1)
+        
+        # Additional option for hovering task
+        reward += 1
         
         return reward
 
@@ -43,11 +46,17 @@ class Task():
             done = self.sim.next_timestep(rotor_speeds) # update the sim pose and velocities
             reward += self.get_reward() 
             pose_all.append(self.sim.pose)
+            
         next_state = np.concatenate(pose_all)
         
-        if self.sim.pose[2] >= self.target_pos[2]: # If current position of the sim is equal to or more than the target position
-            reward += 10
-            done = True
+        # This is addtional condition for the task of taking off
+        # if self.sim.pose[2] >= self.target_pos[2]: # If current position of the sim is equal to or more than the target position
+        #     reward += 10
+        #     done = True
+        
+        # for debugging
+        # if done:
+        #     print(rotor_speeds)
             
         return next_state, reward, done
 
